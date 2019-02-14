@@ -1,0 +1,29 @@
+
+example layout for each algorithm in this list:
+
+Algorithm Name ( form-encoded param )
+    Algorithm type (Classification, Regression, or Clustering)
+    Parameters:
+        parameter1-name=default-value
+            value type (int, float, bool, string, or options)
+            Description: Parameter 1 description
+        parameter2-name=default-value
+            value type (int, float, bool, string, or options)
+            Description: Parameter 2 description
+
+parameters not specified in your POST request will use their default values
+use the header "Content-Type: multipart/form-data"
+
+examples with curl:
+    curl -F "alg=perceptron" -F "max_iter=1800" url/api/model/
+
+{% for alg in algorithms %}
+{{ alg.value.AlgName }} ( alg={{ alg.name | lower }} )
+    {{ alg.value.Type }}
+    Parameters:
+    {%- for param in alg.value['Simple Parameters'] %}
+        {{ param.ParamName }}={{ param.Default }}
+            {{ param.Type }}
+            Description: {{ param['Simple Description'] }}
+    {% endfor %}
+{% endfor %}

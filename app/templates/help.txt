@@ -1,5 +1,6 @@
 
-example layout for each algorithm in this list:
+Example layout for each algorithm in this list:
+-------------------------------------------------------------------------------
 
 Algorithm Name ( form-encoded param )
     Algorithm type (Classification, Regression, or Clustering)
@@ -7,15 +8,23 @@ Algorithm Name ( form-encoded param )
         parameter1-name=default-value (type (int, float, bool, or options))
         parameter2-name=default-value (type (int, float, bool, or options))
 
-parameters not specified in your POST request will use their default values
-use the header "Content-Type: multipart/form-data"
+----Notes:
+- parameters not specified in your POST request will use their default values
+- use the header "Content-Type: multipart/form-data"
+- the response of the request to create a model contains an id used to download
+    the model
 
-examples with curl:
+Examples with curl:
     curl -F "alg=perceptron" -F "max_iter=1800" -F "data=@/path/to/data.csv" url/api/model/
 
+To download the model when it is finished being created:
+    curl url/api/model/<id>/download -o <filename>
+        where   <id> = the id number returned when you created the model
+                <filename> = name of the file
 
 
 Algorithms:
+-------------------------------------------------------------------------------
 
 {% for alg in algorithms %}
 {{ alg.value.AlgName }} ( alg={{ alg.name | lower }} )

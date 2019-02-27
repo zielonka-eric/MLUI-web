@@ -1,0 +1,21 @@
+Method | Path              | Arguments, Response, Notes 
+-------|-------------------|----------------------------------------------------
+GET     help                return list of algorithms, their types and params
+
+POST    model               args: data, algorithm, algo params,
+                                  testing, prediction, and ignore columns
+                            return <id> of model to be created or error
+
+POST    model               args: data, type of algorithm
+                                  testing, prediction, and ignore columns
+                            return <id> of model to be created or error,
+                            uses the recommended model
+
+GET     model/<id>          return status of creation of model <id>
+
+GET     model/<id>/download returns download of pickled model
+
+GET     model/<id>/stats    returns download of model's statistics
+
+NOTES:
+prefix path with /api/ ( e.g. /api/model/<id> )

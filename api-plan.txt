@@ -1,21 +1,65 @@
-Method | Path              | Arguments, Response, Notes 
--------|-------------------|----------------------------------------------------
-GET     help                return list of algorithms, their types and params
+GET     /api/help
+    return list of algorithms, their types and parameters
 
-POST    model               args: data, algorithm, algo params,
-                                  testing, prediction, and ignore columns
-                            return <id> of model to be created or error
+GET     /api/help/adv
+    return list of algorithms, their types and parameters,
+        including advanced options
 
-POST    model               args: data, type of algorithm
-                                  testing, prediction, and ignore columns
-                            return <id> of model to be created or error,
-                            uses the recommended model
+POST    /api/model
+    args:
+        data=<upload file or data_id of a file already uploaded>
+        alg=<name of algorithm>
+        <algorithm parameters - see the algorithm list for specific parameters>
+        testing=<column name to test on>
+            Repeat this parameter for each column
+        prediction=<column name to predict>
+        ignore=<column name to ignore>
+            Repeat this parameter for each column
+    return <model_id> of model to be created or error
 
-GET     model/<id>          return status of creation of model <id>
+POST    /api/model
+    args:
+        data=<upload file or data_id of a file already uploaded>
+        alg-type=<class of algorithms: clustering|classification|regression >
+        testing=<column name to test on>
+        prediction=<column name to predict>
+            Repeat this parameter for each column
+        ignore=<column name to ignore>
+            Repeat this parameter for each column
+    return <model_id> of model to be created or error,
+    uses the recommended model
 
-GET     model/<id>/download returns download of pickled model
+GET     /api/model/<model_id>
+    return creation status of model defined by <model_id>
 
-GET     model/<id>/stats    returns download of model's statistics
+GET     /api/model/<model_id>/download
+    returns download of pickled model defined by <model_id>
 
-NOTES:
-prefix path with /api/ ( e.g. /api/model/<id> )
+POST    /api/model/<model_id>/test
+    args:
+        data=<upload file or data_id of a file already uploaded>
+    tests the model defined by <model_id>
+    returns the new result_id
+
+GET     /api/model/<model_id>/results
+    returns all of model's testing results
+
+POST    /api/model/<model_id>/remove
+    removes model defined by <model_id> from the database
+    returns a confirmation that the model was removed
+
+GET     /api/results/<result_id>
+    returns one set of testing results defined by <result_id>
+
+POST    /api/data
+    args:
+        data=<file to be uploaded>
+    uploads data to the database to be used later
+    returns new data_id
+
+GET     /api/data/<data_id>
+    return data defined by <data_id>
+
+POST    /api/data/<data_id>/remove
+    remove data defined by <data_id> from the database
+    returns a confirmation that the data was removed

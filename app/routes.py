@@ -21,22 +21,29 @@ def help_adv():
 def model_create():
     # returns the model_id
     if request.mimetype == 'multipart/form-data':
-        #create a model
-        data = request.form
         files = request.files
+        params = request.form.to_dict()
 
-        dm.model_create(data, files)
-
-        return str(data) + " " + request.mimetype
+        alg = params.pop('alg', None)
+        data_id = params.pop('data', None)
+        data_file = files.get('data')
+        
+        #create the model
+        data = dm.model_create(alg, data_file, data_id, params)
+        
+        if data['error']:
+            return "\nError: " + data.get('errmsg')
+        else:
+            return "\nModel id: " + data.get('model_id')
     else:
-        return str(False)
+        return "\nIncorrect mimetype. Use 'multipart/form-data'"
 
-@app.route('/api/model/<int:model_id>', methods=['GET'])
+@app.route('/api/model/<string:model_id>', methods=['GET'])
 def model_status(model_id):
     # returns the creation status
     return dm.model_status(model_id)
 
-@app.route('/api/model/<int:model_id>/download', methods=['GET'])
+@app.route('/api/model/<string:model_id>/download', methods=['GET'])
 def model_download(model_id):
     # returns the pickled model
     pickled_model = dm.model_download(model_id)
@@ -47,22 +54,37 @@ def model_download(model_id):
         as_attachment=True,
         attachment_filename='%s.txt' % id)     #change filename
 
-@app.route('/api/model/<int:model_id>/test', methods=['POST'])
+@app.route('/api/model/<string:model_id>/test', methods=['POST'])
 def model_test(model_id):
     # returns the new result_id
-    return dm.model_test(model_id)
+    if request.mimetype == 'multipart/form-data':
+        files = request.files
+        params = request.form.to_dict()
 
-@app.route('/api/model/<int:model_id>/results', methods=['GET'])
+        data_id = params.pop('data', None)
+        data_file = files.get('data')
+        
+        #create the model
+        data = dm.model_test(model_id, data_file, data_id, params)
+        
+        if data['error']:
+            return "\nError: " + data.get('errmsg')
+        else:
+            return "\nResult id: " + data.get('result_id')
+    else:
+        return "\nIncorrect mimetype. Use 'multipart/form-data'"
+
+@app.route('/api/model/<string:model_id>/results', methods=['GET'])
 def model_results(model_id):
     # returns all of model's testing results
     return str(dm.model_results(model_id))
 
-@app.route('/api/model/<int:model_id>/remove', methods=['POST'])
+@app.route('/api/model/<string:model_id>/remove', methods=['POST'])
 def model_remove(model_id):
     # returns a confirmation that the model was removed
     return str(dm.model_remove(model_id))
 
-@app.route('/api/results/<int:result_id>', methods=['GET'])
+@app.route('/api/results/<string:result_id>', methods=['GET'])
 def get_results(result_id):
     # returns one set of results
     return str(dm.get_results(result_id))
@@ -72,17 +94,23 @@ def upload_data():
     # returns new data_id
     if request.mimetype == 'multipart/form-data':
         #create a model
-        data = request.files["data"]
-        return str(dm.upload_data(data))
+        data_file = request.files["data"]
+        
+        data = dm.upload_data(data_file)
+        
+        if data['error']:
+            return "\nError: " + data.get('errmsg')
+        else:
+            return "\nData id: " + data.get('data_id')
     else:
-        return str(False)
+        return "\nIncorrect mimetype. Use 'multipart/form-data'"
 
-@app.route('/api/data/<int:data_id>', methods=['GET'])
+@app.route('/api/data/<string:data_id>', methods=['GET'])
 def data_get(data_id):
     # returns the data file
-    return str(dm.data_get(data_id))
+    return dm.data_get(data_id)
 
-@app.route('/api/data/<int:data_id>/remove', methods=['POST'])
+@app.route('/api/data/<string:data_id>/remove', methods=['POST'])
 def data_remove(data_id):
     # returns a confirmation that the data was removed
     return str(dm.data_remove(data_id))

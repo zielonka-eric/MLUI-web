@@ -1,11 +1,13 @@
 from amlet import amlet_engine
+import string
+import random
 # import database library
 
 class data_model:
     # NOTE: Most of the methods' parameters need to change
 
     def __init__(self):
-        engine = amlet_engine.AMLET_Engine(self)
+        self.engine = amlet_engine.AMLET_Engine(self)
         # set up database
         pass
 
@@ -13,13 +15,32 @@ class data_model:
         # get dict of algorithms from amlet
         return {}
 
-    def model_create(self, *args):
+    def model_create(self, algorithm, data_file, data_id, params):
         # create new random model_id
-        # check for id collision in database
-        # if data_id is given, get data from the database
+        model_id = ''.join(
+            random.choices(string.ascii_letters + string.digits, k=10))
+
+        # TODO: check for id collision in database
+
+        response = dict(error=False,
+                    errmsg="",
+                    model_id=model_id)
+
+        # if no data_file, and data_id is given, get data from the database
+        if data_file is not None:
+            data = data_file
+        elif data_id is not None:
+            data = data_id #TODO: get data from database
+        else:
+            response['error'] = True
+            response['errmsg'] = "No data provided"
+            return response
+
         # call amlet_engine's createModel()
-        # if no error returned from amlet, return model_id
-        return "abc5"
+        self.engine.createModel(algorithm, params, data, model_id)
+
+        #return model_id and any error message
+        return response
 
     def model_status(self, model_id):
         # check model table in database for status of model_id
@@ -33,14 +54,35 @@ class data_model:
         # return the model bytestream from the database
         return b'hello world\n'
 
-    def model_test(self, model_id):
+    def model_test(self, model_id, data_file, data_id, params):
         # create new random result_id
-        # check for id collision in database
-        # get the model from the database
+        result_id = ''.join(
+            random.choices(string.ascii_letters + string.digits, k=10))
+
+        # TODO: check for id collision in database
+
+        response = dict(error=False,
+                    errmsg="",
+                    result_id=result_id)
+
+        # TODO: get the model from the database
+        model = model_id
+
         # if data_id is given, get data from the database
+        if data_file is not None:
+            data = data_file
+        elif data_id is not None:
+            data = data_id #TODO: get data from database
+        else:
+            response['error'] = True
+            response['errmsg'] = "No data provided"
+            return response
+
         # send model and data to amlet
+        self.engine.testModel(model, params, data, model_id)
+
         # return result_id
-        return "xyz24"
+        return response
 
     def model_results(self, model_id):
         # check results table, get all rows with model_id
@@ -58,10 +100,19 @@ class data_model:
 
     def upload_data(self, data):
         # create new random data_id
-        # check for id collision in database
-        # put data into database data table
+        data_id = ''.join(
+            random.choices(string.ascii_letters + string.digits, k=10))
+
+        # TODO: check for id collision in database
+
+        response = dict(error=False,
+                    errmsg="",
+                    data_id=data_id)
+
+        # TODO: put data into database data table
+
         # return data_id
-        return "98765a"
+        return response
 
     def data_get(self, data_id):
         # get results JSON from database and return it

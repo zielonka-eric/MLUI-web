@@ -107,4 +107,7 @@ venv.bak/
 
 
 # project specific
+.vscode/
+.idea/
 amlet/
+database.db

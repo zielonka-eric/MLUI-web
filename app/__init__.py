@@ -10,7 +10,7 @@ app.config.from_object(Config)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = sqlite3.connect('database.db')
+        db = sqlite3.connect('database.db', isolation_level=None)
         db.row_factory = sqlite3.Row
     return db
 

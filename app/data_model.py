@@ -15,6 +15,9 @@ class data_model:
         return {}
 
     def model_create(self, algorithm, data_file, data_id, params):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         while True:
             # create new random model_id
             model_id = ''.join(
@@ -26,9 +29,6 @@ class data_model:
 
             if c_res[0] == 0:
                 break
-
-        # set up return value
-        response = dict(error=False, errmsg="")
 
         # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
         data = None
@@ -56,10 +56,14 @@ class data_model:
         return response
 
     def model_status(self, model_id):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # check model table in database for status of model_id
         # if status is not finished, check amlet
         # return status
-        return "not done"
+        response['status'] = "not done"
+        return response
 
     def model_download(self, model_id):
         # check model table in database for status of model_id
@@ -68,6 +72,9 @@ class data_model:
         return b'hello world\n'
 
     def model_test(self, model_id, data_file, data_id, params):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         while True:
             # create new random result_id
             result_id = ''.join(
@@ -79,9 +86,6 @@ class data_model:
 
             if c_res[0] == 0:
                 break
-
-        # set up return value
-        response = dict(error=False, errmsg="")
 
         # get the model from the database
         m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
@@ -115,34 +119,49 @@ class data_model:
         return response
 
     def model_results(self, model_id):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # check results table, get all rows with model_id
         # return the list of results JSONs
-        return []
+        response['results'] = []
+        return response
 
     def model_remove(self, model_id):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # delete model with model_id from database
         # delete results with this model_id from database
-        # return confirmation?
-        return True
+        # return confirmation
+        response['confirmation'] = ( 'Model %s and all of its ' +
+                                     'results were removed' ) % (model_id)
+        return response
 
     def get_results(self, result_id):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # get results JSON from database and return it
-        return {}
+        response['results'] = {}
+        return response
 
     def upload_data(self, data):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # create new random data_id
         data_id = ''.join(
             random.choices(string.ascii_letters + string.digits, k=10))
 
         # TODO: check for id collision in database
 
-        response = dict(error=False,
-                    errmsg="",
-                    data_id=data_id)
 
         # TODO: put data into database data table
 
+
         # return data_id
+        response['data_id'] = data_id
         return response
 
     def data_get(self, data_id):
@@ -150,6 +169,10 @@ class data_model:
         return b"data file\n"
 
     def data_remove(self, data_id):
+        # set up return value
+        response = dict(error=False, errmsg="")
+
         # delete model with model_id from database
-        # return confirmation?
-        return True
+        # return confirmation
+        response['confirmation'] = 'Dataset %s was removed' % (data_id)
+        return response

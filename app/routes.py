@@ -29,19 +29,18 @@ def model_create():
         data_file = files.get('data')
         
         #create the model
-        data = dm.model_create(alg, data_file, data_id, params)
+        response = dm.model_create(alg, data_file, data_id, params)
         
-        if data['error']:
-            return "\nError: " + data.get('errmsg')
-        else:
-            return "\nModel id: " + data.get('model_id')
+        return jsonify(response)
     else:
-        return "\nIncorrect mimetype. Use 'multipart/form-data'"
+        return jsonify({"error": True,
+                        "errmsg":
+                            "Incorrect mimetype. Use 'multipart/form-data'"})
 
 @app.route('/api/model/<string:model_id>', methods=['GET'])
 def model_status(model_id):
     # returns the creation status
-    return dm.model_status(model_id)
+    return jsonify(dm.model_status(model_id))
 
 @app.route('/api/model/<string:model_id>/download', methods=['GET'])
 def model_download(model_id):
@@ -52,7 +51,7 @@ def model_download(model_id):
         io.BytesIO(pickled_model),
         mimetype='application/octet-stream',
         as_attachment=True,
-        attachment_filename='%s.txt' % id)     #change filename
+        attachment_filename='%s.txt' % model_id)     #change filename
 
 @app.route('/api/model/<string:model_id>/test', methods=['POST'])
 def model_test(model_id):
@@ -65,29 +64,28 @@ def model_test(model_id):
         data_file = files.get('data')
         
         #create the model
-        data = dm.model_test(model_id, data_file, data_id, params)
+        response = dm.model_test(model_id, data_file, data_id, params)
         
-        if data['error']:
-            return "\nError: " + data.get('errmsg')
-        else:
-            return "\nResult id: " + data.get('result_id')
+        return jsonify(response)
     else:
-        return "\nIncorrect mimetype. Use 'multipart/form-data'"
+        return jsonify({"error": True,
+                        "errmsg":
+                            "Incorrect mimetype. Use 'multipart/form-data'"})
 
 @app.route('/api/model/<string:model_id>/results', methods=['GET'])
 def model_results(model_id):
     # returns all of model's testing results
-    return str(dm.model_results(model_id))
+    return jsonify(dm.model_results(model_id))
 
 @app.route('/api/model/<string:model_id>/remove', methods=['POST'])
 def model_remove(model_id):
     # returns a confirmation that the model was removed
-    return str(dm.model_remove(model_id))
+    return jsonify(dm.model_remove(model_id))
 
 @app.route('/api/results/<string:result_id>', methods=['GET'])
 def get_results(result_id):
     # returns one set of results
-    return str(dm.get_results(result_id))
+    return jsonify(dm.get_results(result_id))
 
 @app.route('/api/data', methods=['POST'])
 def upload_data():
@@ -96,21 +94,26 @@ def upload_data():
         #create a model
         data_file = request.files["data"]
         
-        data = dm.upload_data(data_file)
+        response = dm.upload_data(data_file)
         
-        if data['error']:
-            return "\nError: " + data.get('errmsg')
-        else:
-            return "\nData id: " + data.get('data_id')
+        return jsonify(response)
     else:
-        return "\nIncorrect mimetype. Use 'multipart/form-data'"
+        return jsonify({"error": True,
+                        "errmsg":
+                            "Incorrect mimetype. Use 'multipart/form-data'"})
 
 @app.route('/api/data/<string:data_id>', methods=['GET'])
 def data_get(data_id):
     # returns the data file
-    return dm.data_get(data_id)
+    data_file = dm.data_get(data_id)
+
+    return send_file(
+        io.BytesIO(data_file),
+        mimetype='application/octet-stream',
+        as_attachment=True,
+        attachment_filename='%s.txt' % data_id)     #change filename
 
 @app.route('/api/data/<string:data_id>/remove', methods=['POST'])
 def data_remove(data_id):
     # returns a confirmation that the data was removed
-    return str(dm.data_remove(data_id))
+    return jsonify(dm.data_remove(data_id))

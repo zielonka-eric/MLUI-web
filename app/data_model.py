@@ -21,22 +21,23 @@ class data_model:
                 random.choices(string.ascii_letters + string.digits, k=10))
 
             # check for id collision in database
-            result = query_db("SELECT COUNT() FROM Models WHERE model_id = ?;",
-                              [model_id], one=True)
+            c_res = query_db("SELECT COUNT() FROM Models WHERE model_id = ?;",
+                             [model_id], one=True)
 
-            if result[0] == 0:
+            if c_res[0] == 0:
                 break
 
         # set up return value
         response = dict(error=False, errmsg="")
 
         # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
+        data = None
         if data_file is not None:
             data = data_file
         elif data_id is not None:
-            result = query_db("SELECT data FROM Data WHERE data_id = ?;",
-                              [data_id], one=True)
-            data = io.BytesIO(result[0]) if result else None
+            d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
+                           [data_id], one=True)
+            data = io.BytesIO(d_res[0]) if d_res else None
         if data is None:
             response['error'] = True
             response['errmsg'] = "No data provided or invalid data_id"
@@ -67,33 +68,50 @@ class data_model:
         return b'hello world\n'
 
     def model_test(self, model_id, data_file, data_id, params):
-        # create new random result_id
-        result_id = ''.join(
-            random.choices(string.ascii_letters + string.digits, k=10))
+        while True:
+            # create new random result_id
+            result_id = ''.join(
+                random.choices(string.ascii_letters + string.digits, k=10))
 
-        # TODO: check for id collision in database
+            # check for id collision in database
+            c_res = query_db("SELECT COUNT() FROM Results WHERE result_id = ?;",
+                             [result_id], one=True)
 
-        response = dict(error=False,
-                    errmsg="",
-                    result_id=result_id)
+            if c_res[0] == 0:
+                break
 
-        # TODO: get the model from the database
-        model = model_id
+        # set up return value
+        response = dict(error=False, errmsg="")
 
-        # if data_id is given, get data from the database
+        # get the model from the database
+        m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
+                         [model_id], one=True)
+        model = str(m_res[0]) if m_res else None
+
+        # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
+        data = None
         if data_file is not None:
             data = data_file
         elif data_id is not None:
-            data = data_id #TODO: get data from database
-        else:
+            d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
+                             [data_id], one=True)
+            data = io.BytesIO(d_res[0]) if d_res else None
+        if data is None:
             response['error'] = True
-            response['errmsg'] = "No data provided"
+            response['errmsg'] = "No data provided or invalid data_id"
             return response
 
         # send model and data to amlet
         self.engine.testModel(model, params, data, model_id)
 
-        # return result_id
+        # insert row into database for the new testing result
+        query_db("INSERT INTO Results (result_id, model_id, is_finished) "
+                 "VALUES (?, ?, ?);",
+                 [result_id, model_id, 0])
+
+        #return result_id or any error message
+        if response['error'] == False:
+            response['result_id'] = result_id
         return response
 
     def model_results(self, model_id):
@@ -103,6 +121,7 @@ class data_model:
 
     def model_remove(self, model_id):
         # delete model with model_id from database
+        # delete results with this model_id from database
         # return confirmation?
         return True
 

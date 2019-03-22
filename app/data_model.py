@@ -1,8 +1,9 @@
+from app import query_db
 from amlet import amlet_engine
 import string
 import random
 import io
-from app import query_db
+import json
 import sqlite3
 
 class data_model:
@@ -158,9 +159,21 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # TODO: check results table, get all rows with model_id
+        # check results table, get all rows with model_id
+        r_res = query_db("SELECT result_id, results FROM Results "
+                           "WHERE model_id = ?;",
+                         [model_id])
+        # check if there are no sets of results with that id
+        if not r_res:
+            response['error'] = True
+            response['errmsg'] = "No results with that model_id."
+            return response
+
         # return the list of results JSONs
-        response['results'] = []
+        response['results'] = [ { 'result_id' : r['result_id'],
+                                  'results' : json.loads(r['results'])
+                                    if r['results'] else 'no results yet' }
+                                for r in r_res ]
         return response
 
     def model_remove(self, model_id):
@@ -178,8 +191,18 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # TODO: get results JSON from database and return it
-        response['results'] = {}
+        # get results JSON from database
+        r_res = query_db("SELECT results FROM Results WHERE result_id = ?;",
+                         [result_id], one=True)
+        # check if there is no set of results with that id
+        if r_res is None:
+            response['error'] = True
+            response['errmsg'] = "No results with that id."
+            return response
+
+        # return the results JSON
+        response['results'] = ( json.loads(r_res[0])
+                                  if r_res[0] else 'no results yet' )
         return response
 
     def upload_data(self, data_file, filename):

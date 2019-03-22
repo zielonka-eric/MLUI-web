@@ -112,13 +112,16 @@ def upload_data():
 @app.route('/api/data/<string:data_id>', methods=['GET'])
 def data_get(data_id):
     # returns the data file
-    data_file, filename = dm.data_get(data_id)
+    data_file, filename, response = dm.data_get(data_id)
 
-    return send_file(
-        io.BytesIO(data_file),
-        mimetype='application/octet-stream',
-        as_attachment=True,
-        attachment_filename=filename)
+    if response['error'] == True:
+        return jsonify(response), 404
+    else:
+        return send_file(
+            io.BytesIO(data_file),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            attachment_filename=filename)
 
 @app.route('/api/data/<string:data_id>/remove', methods=['POST'])
 def data_remove(data_id):

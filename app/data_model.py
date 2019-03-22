@@ -207,15 +207,24 @@ class data_model:
         return response
 
     def data_get(self, data_id):
+        # set up return value
+        data_file = None
+        filename = None
+        response = dict(error=False, errmsg="")
+
         # get the data file's byte data and filename from database
         d_res = query_db("SELECT data, filename FROM Data WHERE data_id = ?;",
                          [data_id], one=True)
-        # TODO: error checking - check if d_res is None (data_id not in table)
+        # check if there is no data with that id
+        if d_res is None:
+            response['error'] = True
+            response['errmsg'] = "No data with that id."
+            return data_file, filename, response
         data_file = d_res['data']
         filename = d_res['filename']
 
         # return data file and filename
-        return data_file, filename
+        return data_file, filename, response
 
     def data_remove(self, data_id):
         # set up return value

@@ -60,17 +60,51 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # TODO: check model table in database for status of model_id
+        # check model table in database for status of model_id
+        s_res = query_db("SELECT is_finished FROM Models WHERE model_id = ?;",
+                         [model_id], one=True)
+        # check if there is no model with that id
+        if s_res is None:
+            response['error'] = True
+            response['errmsg'] = "No model with that id."
+            return response
+        status = s_res[0]
+
         # if status is not finished, check amlet
+        if status == 0:
+            response['status'] = self.engine.getStatus(model_id)
+        else:
+            response['status'] = "done"
+
         # return status
-        response['status'] = "not done"
         return response
 
     def model_download(self, model_id):
-        # TODO: check model table in database for status of model_id
+        # set up return value
+        model = None
+        response = dict(error=False, errmsg="")
+
+        # check model table in database for status of model_id
+        s_res = query_db("SELECT is_finished FROM Models WHERE model_id = ?;",
+                         [model_id], one=True)
+        # check if there is no model with that id
+        if s_res is None:
+            response['error'] = True
+            response['errmsg'] = "No model with that id."
+            return model, response
+        status = s_res[0]
+
         # if status is not finished, error
+        if status == 0:
+            response['error'] = True
+            response['errmsg'] = "Model is not finished being trained."
+        else:
+            m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
+                             [model_id], one=True)
+            model = m_res[0]
+
         # return the model bytestream from the database
-        return b'hello world\n'
+        return model, response
 
     def model_test(self, model_id, data_file, data_id, params):
         # set up return value
@@ -92,6 +126,7 @@ class data_model:
         m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
                          [model_id], one=True)
         model = str(m_res[0]) if m_res else None
+        # TODO: change this error checking, don't set model to None
 
         # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
         data = None
@@ -175,6 +210,7 @@ class data_model:
         # get the data file's byte data and filename from database
         d_res = query_db("SELECT data, filename FROM Data WHERE data_id = ?;",
                          [data_id], one=True)
+        # TODO: error checking - check if d_res is None (data_id not in table)
         data_file = d_res['data']
         filename = d_res['filename']
 
@@ -194,7 +230,9 @@ class data_model:
 
     # methods for interfacing with AMLET
     def modelCreated(self, model, model_id):
+        # TODO: implement
         pass
 
     def modelTested(self, result, result_id):
+        # TODO: implement
         pass

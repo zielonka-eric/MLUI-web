@@ -46,13 +46,16 @@ def model_status(model_id):
 @app.route('/api/model/<string:model_id>/download', methods=['GET'])
 def model_download(model_id):
     # returns the pickled model
-    pickled_model = dm.model_download(model_id)
+    pickled_model, response = dm.model_download(model_id)
 
-    return send_file(
-        io.BytesIO(pickled_model),
-        mimetype='application/octet-stream',
-        as_attachment=True,
-        attachment_filename='%s.txt' % model_id)     #change filename
+    if response['error'] == True:
+        return jsonify(response), 409
+    else:
+        return send_file(
+            io.BytesIO(pickled_model),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            attachment_filename='%s.pickle' % model_id)
 
 @app.route('/api/model/<string:model_id>/test', methods=['POST'])
 def model_test(model_id):

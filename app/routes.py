@@ -1,4 +1,5 @@
 from flask import render_template, request, send_file, jsonify
+from werkzeug.utils import secure_filename
 import io
 from app import app, data_model
 
@@ -92,10 +93,13 @@ def upload_data():
     # returns new data_id
     if request.mimetype == 'multipart/form-data':
         #create a model
+        if "data" not in request.files:
+            return jsonify({"error": True, "errmsg": "No data file uploaded.'"})
+
         data_file = request.files["data"]
-        
-        response = dm.upload_data(data_file)
-        
+        filename = secure_filename(data_file.filename)
+        response = dm.upload_data(data_file, filename)
+
         return jsonify(response)
     else:
         return jsonify({"error": True,
@@ -105,13 +109,13 @@ def upload_data():
 @app.route('/api/data/<string:data_id>', methods=['GET'])
 def data_get(data_id):
     # returns the data file
-    data_file = dm.data_get(data_id)
+    data_file, filename = dm.data_get(data_id)
 
     return send_file(
         io.BytesIO(data_file),
         mimetype='application/octet-stream',
         as_attachment=True,
-        attachment_filename='%s.txt' % data_id)     #change filename
+        attachment_filename=filename)
 
 @app.route('/api/data/<string:data_id>/remove', methods=['POST'])
 def data_remove(data_id):

@@ -14,5 +14,6 @@ CREATE TABLE Results (
 
 CREATE TABLE Data (
     data_id CHAR(10) PRIMARY KEY,
-    data BLOB NOT NULL
+    data BLOB NOT NULL,
+    filename TEXT NOT NULL
 );

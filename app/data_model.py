@@ -3,6 +3,7 @@ import string
 import random
 import io
 from app import query_db
+import sqlite3
 
 class data_model:
     # NOTE: Most of the methods' parameters need to change
@@ -59,14 +60,14 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # check model table in database for status of model_id
+        # TODO: check model table in database for status of model_id
         # if status is not finished, check amlet
         # return status
         response['status'] = "not done"
         return response
 
     def model_download(self, model_id):
-        # check model table in database for status of model_id
+        # TODO: check model table in database for status of model_id
         # if status is not finished, error
         # return the model bytestream from the database
         return b'hello world\n'
@@ -122,7 +123,7 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # check results table, get all rows with model_id
+        # TODO: check results table, get all rows with model_id
         # return the list of results JSONs
         response['results'] = []
         return response
@@ -131,8 +132,8 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # delete model with model_id from database
-        # delete results with this model_id from database
+        # TODO: delete model with model_id from database
+        # TODO: delete results with this model_id from database
         # return confirmation
         response['confirmation'] = ( 'Model %s and all of its ' +
                                      'results were removed' ) % (model_id)
@@ -142,37 +143,58 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # get results JSON from database and return it
+        # TODO: get results JSON from database and return it
         response['results'] = {}
         return response
 
-    def upload_data(self, data):
+    def upload_data(self, data_file, filename):
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # create new random data_id
-        data_id = ''.join(
-            random.choices(string.ascii_letters + string.digits, k=10))
+        while True:
+            # create new random data_id
+            data_id = ''.join(
+                random.choices(string.ascii_letters + string.digits, k=10))
 
-        # TODO: check for id collision in database
+            # check for id collision in database
+            c_res = query_db("SELECT COUNT() FROM Data WHERE data_id = ?;",
+                             [data_id], one=True)
 
+            if c_res[0] == 0:
+                break
 
-        # TODO: put data into database data table
-
+        # put data into database data table
+        query_db("INSERT INTO Data (data_id, data, filename) VALUES (?, ?, ?);",
+                 [data_id, sqlite3.Binary(data_file.read()), filename])
 
         # return data_id
         response['data_id'] = data_id
         return response
 
     def data_get(self, data_id):
-        # get results JSON from database and return it
-        return b"data file\n"
+        # get the data file's byte data and filename from database
+        d_res = query_db("SELECT data, filename FROM Data WHERE data_id = ?;",
+                         [data_id], one=True)
+        data_file = d_res['data']
+        filename = d_res['filename']
+
+        # return data file and filename
+        return data_file, filename
 
     def data_remove(self, data_id):
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # delete model with model_id from database
+        # TODO: delete model with model_id from database
+
         # return confirmation
         response['confirmation'] = 'Dataset %s was removed' % (data_id)
         return response
+
+
+    # methods for interfacing with AMLET
+    def modelCreated(self, model, model_id):
+        pass
+
+    def modelTested(self, result, result_id):
+        pass

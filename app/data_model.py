@@ -1,5 +1,6 @@
 from app import query_db
 from amlet import amlet_engine
+from amlet.library import AlgorithmsEnum
 import string
 import random
 import io
@@ -8,14 +9,12 @@ import sqlite3
 import pickle
 
 class data_model:
-    # NOTE: Most of the methods' parameters need to change
-
     def __init__(self):
         self.engine = amlet_engine.AMLET_Engine(self)
 
     def help(self):
         # get dict of algorithms from amlet
-        return {}
+        return AlgorithmsEnum.Algorithm
 
     def model_create(self, algorithm, data_file, data_id, params):
         # set up return value
@@ -75,8 +74,10 @@ class data_model:
         # if status is not finished, check amlet
         if status == 0:
             response['status'] = self.engine.getStatus(model_id)
-        else:
+        elif status == 1:
             response['status'] = "done"
+        elif status == 2:
+            response['status'] = "error creating model"
 
         # return status
         return response
@@ -100,10 +101,13 @@ class data_model:
         if status == 0:
             response['error'] = True
             response['errmsg'] = "Model is not finished being trained."
-        else:
+        elif status == 1:
             m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
                              [model_id], one=True)
             model = m_res[0]
+        elif status == 2:
+            response['error'] = True
+            response['errmsg'] = "There was an error training the model."
 
         # return the model bytestream from the database
         return model, response
@@ -290,7 +294,12 @@ class data_model:
 
 
     # methods for interfacing with AMLET
-    def receiveModel(self, model, model_id):
+    def receiveModel(self, model, model_id, error_response):
+        # check if error
+        if error_response:
+            query_db("UPDATE Models SET is_finished = 2 WHERE model_id = ?;",
+                     [model_id])
+
         # pickle the model
         p_model = pickle.dumps(model, pickle.HIGHEST_PROTOCOL)
 

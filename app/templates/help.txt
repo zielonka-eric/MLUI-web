@@ -15,7 +15,7 @@ Algorithm Name ( form-encoded param )
     the model
 
 Examples with curl:
-    curl -F "alg=perceptron" -F "max_iter=1800" -F "data=@/path/to/data.csv" url/api/model/
+    curl -F "alg=perceptron" -F "max_iter=1800" -F "data=@data.csv" url/api/model/
 
 To download the model when it is finished being created:
     curl url/api/model/<id>/download -o <filename>
@@ -27,7 +27,7 @@ Algorithms:
 -------------------------------------------------------------------------------
 
 {% for alg in algorithms %}
-{{ alg.value.AlgName }} ( alg={{ alg.name | lower }} )
+{{ alg.value.AlgName }} ( alg={{ alg.value.AlgName | replace(' ', '_') | lower }} )
     {{ alg.value.Type }}
     Parameters:
     {%- for param in alg.value['Simple Parameters'] %}

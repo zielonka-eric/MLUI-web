@@ -180,8 +180,23 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # TODO: delete model with model_id from database
-        # TODO: delete results with this model_id from database
+        # check that the model_id exists
+        s_res = query_db("SELECT COUNT() FROM Models WHERE model_id = ?",
+                         [model_id], one=True)
+        if s_res[0] == 0:
+            response['error'] = True
+            response['errmsg'] = ( "There is no model with model_id of %s" %
+                (model_id) )
+            return response
+
+        # delete model with model_id from database
+        query_db("DELETE FROM Models WHERE model_id = ?;",
+                 [model_id])
+
+        # delete results with this model_id from database
+        query_db("DELETE FROM Results WHERE model_id = ?;",
+                 [model_id])
+
         # return confirmation
         response['confirmation'] = ( 'Model %s and all of its ' +
                                      'results were removed' ) % (model_id)
@@ -253,7 +268,18 @@ class data_model:
         # set up return value
         response = dict(error=False, errmsg="")
 
-        # TODO: delete model with model_id from database
+        # check that the data_id exists
+        s_res = query_db("SELECT COUNT() FROM Data WHERE data_id = ?",
+                         [data_id], one=True)
+        if s_res[0] == 0:
+            response['error'] = True
+            response['errmsg'] = ( "There is no dataset with data_id of %s" %
+                (data_id) )
+            return response
+
+        # delete data with data_id from database
+        query_db("DELETE FROM Data WHERE data_id = ?;",
+                 [data_id])
 
         # return confirmation
         response['confirmation'] = 'Dataset %s was removed' % (data_id)

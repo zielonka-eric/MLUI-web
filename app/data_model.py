@@ -5,6 +5,7 @@ import random
 import io
 import json
 import sqlite3
+import pickle
 
 class data_model:
     # NOTE: Most of the methods' parameters need to change
@@ -189,6 +190,8 @@ class data_model:
                 (model_id) )
             return response
 
+        # TODO: remove model from amlet if it's being created
+
         # delete model with model_id from database
         query_db("DELETE FROM Models WHERE model_id = ?;",
                  [model_id])
@@ -287,10 +290,17 @@ class data_model:
 
 
     # methods for interfacing with AMLET
-    def modelCreated(self, model, model_id):
-        # TODO: implement
-        pass
+    def receiveModel(self, model, model_id):
+        # pickle the model
+        p_model = pickle.dumps(model, pickle.HIGHEST_PROTOCOL)
+
+        # update row with the model_id to add the model, is_finished
+        query_db("UPDATE Models SET model = ?, is_finished = 1 "
+                   "WHERE model_id = ?;",
+                 [sqlite3.Binary(p_model), model_id])
 
     def modelTested(self, result, result_id):
-        # TODO: implement
-        pass
+        # update row with the result_id to add the results, is_finished
+        query_db("UPDATE Results SET results = ?, is_finished = 1 "
+                   "WHERE result_id = ?;",
+                 [result, result_id])

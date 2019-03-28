@@ -1,6 +1,7 @@
 from flask import Flask, g
 from config import Config
 import sqlite3
+import logging
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -25,6 +26,8 @@ def query_db(query, args=(), one=False):
     rv = cur.fetchall()
     cur.close()
     return (rv[0] if rv else None) if one else rv
+
+app.logger.setLevel(logging.INFO)
 
 from app import routes
 #from app.api import endpoints

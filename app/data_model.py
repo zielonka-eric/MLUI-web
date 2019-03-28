@@ -1,6 +1,6 @@
-from app import query_db
+from app import query_db, app
 from amlet import amlet_engine
-from amlet.library import AlgorithmsEnum
+from amlet.library.algorithms import AlgorithmsEnum
 import string
 import random
 import io
@@ -16,7 +16,7 @@ class data_model:
         # get dict of algorithms from amlet
         return AlgorithmsEnum.Algorithm
 
-    def model_create(self, algorithm, data_file, data_id, params):
+    def model_create(self, algorithm, data_files, data_ids, params):
         # set up return value
         response = dict(error=False, errmsg="")
 
@@ -33,28 +33,48 @@ class data_model:
                 break
 
         # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
-        data = None
-        if data_file is not None:
-            data = data_file
-        elif data_id is not None:
-            d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
-                           [data_id], one=True)
-            data = io.BytesIO(d_res[0]) if d_res else None
-        if data is None:
+        data_list = data_files
+        #data_list = [ "./" + d.filename for d in data_files ]
+        if data_ids: # if data_ids is not empty
+            for data_id in data_ids:
+                d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
+                                 [data_id], one=True)
+                if d_res:
+                    data_list.append(io.BytesIO(d_res[0]))
+
+        if not data_list: # if data_list is empty
             response['error'] = True
             response['errmsg'] = "No data provided or invalid data_id"
             return response
 
+        # create the params dict for amlet's createModel()
+        params_dict = {
+            "DataParams" : {
+                "Scheme" : "1 Train CSV",
+                "Scheme Specific" : {
+                    "Training Cols" : params.poplist('train'),
+                    "Target Col" : params.poplist('target')
+                }
+            },
+            "AlgParams" : params.to_dict()
+        }
+        app.logger.info('creating model %s', model_id)
+
         # call amlet_engine's createModel()
-        self.engine.createModel(algorithm, params, data, model_id)
+        success = self.engine.createModel(algorithm, params_dict,
+                                          data_list, model_id)
+
+        if not success:
+            response['error'] = True
+            response['errmsg'] = "There was an error creating the model."
+            return response
 
         # insert row into database for the new model
         query_db("INSERT INTO Models (model_id, is_finished) VALUES (?, ?);",
                  [model_id, 0])
 
         #return model_id or any error message
-        if response['error'] == False:
-            response['model_id'] = model_id
+        response['model_id'] = model_id
         return response
 
     def model_status(self, model_id):
@@ -294,9 +314,11 @@ class data_model:
 
 
     # methods for interfacing with AMLET
-    def receiveModel(self, model, model_id, error_response):
+    def receiveModel(self, model, model_id, error):
+        #app.logger.info("\aModel %s received", model_id)
+
         # check if error
-        if error_response:
+        if error:
             query_db("UPDATE Models SET is_finished = 2 WHERE model_id = ?;",
                      [model_id])
 

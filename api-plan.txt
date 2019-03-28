@@ -10,22 +10,18 @@ POST    /api/model
         data=<upload file or data_id of a file already uploaded>
         alg=<name of algorithm>
         <algorithm parameters - see the algorithm list for specific parameters>
-        testing=<column name to test on>
+        train=<column name to train on>
             Repeat this parameter for each column
-        prediction=<column name to predict>
-        ignore=<column name to ignore>
-            Repeat this parameter for each column
+        target=<column name to predict>
     return <model_id> of model to be created or error
 
 POST    /api/model
     args:
         data=<upload file or data_id of a file already uploaded>
         alg-type=<class of algorithms: clustering|classification|regression >
-        testing=<column name to test on>
-        prediction=<column name to predict>
+        train=<column name to train on>
             Repeat this parameter for each column
-        ignore=<column name to ignore>
-            Repeat this parameter for each column
+        target=<column name to predict>
     return <model_id> of model to be created or error,
     uses the recommended model
 

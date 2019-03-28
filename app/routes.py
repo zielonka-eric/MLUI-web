@@ -23,14 +23,14 @@ def model_create():
     # returns the model_id
     if request.mimetype == 'multipart/form-data':
         files = request.files
-        params = request.form.to_dict()
+        all_params = request.form.copy()
 
-        alg = params.pop('alg', None)
-        data_id = params.pop('data', None)
-        data_file = files.get('data')
-        
+        alg = all_params.pop('alg', None).replace("_", " ")
+        data_ids = all_params.poplist('data')
+        data_files = files.getlist('data')
+
         #create the model
-        response = dm.model_create(alg, data_file, data_id, params)
+        response = dm.model_create(alg, data_files, data_ids, all_params)
         
         return jsonify(response)
     else:

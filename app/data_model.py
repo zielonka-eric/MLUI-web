@@ -263,6 +263,9 @@ class data_model:
             if c_res[0] == 0:
                 break
 
+        # TODO: break file into chunks < 1GB in size and put into different
+        #       rows with a sequence counter
+
         # put data into database data table
         query_db("INSERT INTO Data (data_id, data, filename) VALUES (?, ?, ?);",
                  [data_id, sqlite3.Binary(data_file.read()), filename])
@@ -315,23 +318,25 @@ class data_model:
 
     # methods for interfacing with AMLET
     def receiveModel(self, model, model_id, error):
-        #app.logger.info("\aModel %s received", model_id)
+        with app.app_context():
+            app.logger.info("\aModel %s received", model_id)
 
-        # check if error
-        if error:
-            query_db("UPDATE Models SET is_finished = 2 WHERE model_id = ?;",
-                     [model_id])
+            # check if error
+            if error:
+                query_db("UPDATE Models SET is_finished = 2 WHERE model_id = ?;",
+                        [model_id])
 
-        # pickle the model
-        p_model = pickle.dumps(model, pickle.HIGHEST_PROTOCOL)
+            # pickle the model
+            p_model = pickle.dumps(model, pickle.HIGHEST_PROTOCOL)
 
-        # update row with the model_id to add the model, is_finished
-        query_db("UPDATE Models SET model = ?, is_finished = 1 "
-                   "WHERE model_id = ?;",
-                 [sqlite3.Binary(p_model), model_id])
+            # update row with the model_id to add the model, is_finished
+            query_db("UPDATE Models SET model = ?, is_finished = 1 "
+                    "WHERE model_id = ?;",
+                    [sqlite3.Binary(p_model), model_id])
 
     def modelTested(self, result, result_id):
-        # update row with the result_id to add the results, is_finished
-        query_db("UPDATE Results SET results = ?, is_finished = 1 "
-                   "WHERE result_id = ?;",
-                 [result, result_id])
+        with app.app_context():
+            # update row with the result_id to add the results, is_finished
+            query_db("UPDATE Results SET results = ?, is_finished = 1 "
+                    "WHERE result_id = ?;",
+                    [result, result_id])

@@ -28,6 +28,7 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 app.logger.setLevel(logging.INFO)
+#app.logger.setLevel(logging.DEBUG)
 
 from app import routes
 #from app.api import endpoints

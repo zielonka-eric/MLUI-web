@@ -32,9 +32,8 @@ class data_model:
             if c_res[0] == 0:
                 break
 
-        # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
+        # get data from the database, append to list
         data_list = data_files
-        #data_list = [ "./" + d.filename for d in data_files ]
         if data_ids: # if data_ids is not empty
             for data_id in data_ids:
                 d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
@@ -50,7 +49,7 @@ class data_model:
         # create the params dict for amlet's createModel()
         params_dict = {
             "DataParams" : {
-                "Scheme" : "1 Train CSV",
+                "Scheme" : "Row Based Examples CSV",
                 "Scheme Specific" : {
                     "Training Cols" : params.poplist('train'),
                     "Target Col" : params.poplist('target')
@@ -59,6 +58,9 @@ class data_model:
             "AlgParams" : params.to_dict()
         }
         app.logger.info('creating model %s', model_id)
+        app.logger.debug('algorithm : %s', algorithm)
+        app.logger.debug('params_dict : %s', params_dict)
+        app.logger.debug('data_list : %s', data_list)
 
         # call amlet_engine's createModel()
         success = self.engine.createModel(algorithm, params_dict,
@@ -93,7 +95,8 @@ class data_model:
 
         # if status is not finished, check amlet
         if status == 0:
-            response['status'] = self.engine.getStatus(model_id)
+            #response['status'] = self.engine.getStatus(model_id)
+            response['status'] = "not done"
         elif status == 1:
             response['status'] = "done"
         elif status == 2:
@@ -118,21 +121,21 @@ class data_model:
         status = s_res[0]
 
         # if status is not finished, error
-        if status == 0:
+        if status == 0: # not finished
             response['error'] = True
             response['errmsg'] = "Model is not finished being trained."
-        elif status == 1:
+        elif status == 1: # finished
             m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
                              [model_id], one=True)
             model = m_res[0]
-        elif status == 2:
+        elif status == 2: # error creating model
             response['error'] = True
             response['errmsg'] = "There was an error training the model."
 
         # return the model bytestream from the database
         return model, response
 
-    def model_test(self, model_id, data_file, data_id, params):
+    def model_test(self, model_id, data_files, data_ids, params):
         # set up return value
         response = dict(error=False, errmsg="")
 
@@ -151,24 +154,35 @@ class data_model:
         # get the model from the database
         m_res = query_db("SELECT model FROM Models WHERE model_id = ?;",
                          [model_id], one=True)
-        model = str(m_res[0]) if m_res else None
-        # TODO: change this error checking, don't set model to None
+        if m_res:
+            model = pickle.loads(m_res[0])
+        else:
+            response['error'] = True
+            response['errmsg'] = "No model provided or invalid model_id"
+            return response
 
-        # if no data_file, and data_id is given, get data from the database      # TODO: change to get multiple data files
-        data = None
-        if data_file is not None:
-            data = data_file
-        elif data_id is not None:
-            d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
-                             [data_id], one=True)
-            data = io.BytesIO(d_res[0]) if d_res else None
-        if data is None:
+        # get data from the database, append to list
+        data_list = data_files
+        if data_ids: # if data_ids is not empty
+            for data_id in data_ids:
+                d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
+                                 [data_id], one=True)
+                if d_res:
+                    data_list.append(io.BytesIO(d_res[0]))
+        if not data_list: # if data_list is empty
             response['error'] = True
             response['errmsg'] = "No data provided or invalid data_id"
             return response
 
+        params_dict = params
+
+        app.logger.info('testing model %s \n'
+                        '\tresult_id %s', model_id, result_id)
+        app.logger.debug('params_dict : %s', params_dict)
+        app.logger.debug('data_list : %s', data_list)
+
         # send model and data to amlet
-        self.engine.testModel(model, params, data, model_id)
+        self.engine.testModel(model, params, data_list, result_id)
 
         # insert row into database for the new testing result
         query_db("INSERT INTO Results (result_id, model_id, is_finished) "
@@ -317,13 +331,14 @@ class data_model:
 
 
     # methods for interfacing with AMLET
-    def receiveModel(self, model, model_id, error):
+    def receiveModel(self, model, model_id, error=False):
         with app.app_context():
-            app.logger.info("\aModel %s received", model_id)
+            app.logger.info("Model %s received", model_id)
 
             # check if error
             if error:
-                query_db("UPDATE Models SET is_finished = 2 WHERE model_id = ?;",
+                query_db("UPDATE Models SET "
+                         "is_finished = 2 WHERE model_id = ?;",
                         [model_id])
 
             # pickle the model
@@ -334,8 +349,16 @@ class data_model:
                     "WHERE model_id = ?;",
                     [sqlite3.Binary(p_model), model_id])
 
-    def modelTested(self, result, result_id):
+    def modelTested(self, result, result_id, error=False):
         with app.app_context():
+            app.logger.info("Test results %s received", result_id)
+
+            # check if error
+            if error:
+                query_db("UPDATE Results SET "
+                         "is_finished = 2 WHERE result_id = ?;",
+                        [result_id])
+
             # update row with the result_id to add the results, is_finished
             query_db("UPDATE Results SET results = ?, is_finished = 1 "
                     "WHERE result_id = ?;",

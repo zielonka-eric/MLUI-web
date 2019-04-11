@@ -1,7 +1,9 @@
+from app import app, data_model
 from flask import render_template, request, send_file, jsonify
 from werkzeug.utils import secure_filename
+from werkzeug.datastructures import MultiDict
 import io
-from app import app, data_model
+import json
 
 dm = data_model.data_model()
 
@@ -24,6 +26,13 @@ def model_create():
     if request.mimetype == 'multipart/form-data':
         files = request.files
         all_params = request.form.copy()
+
+        app.logger.debug('all_params : %s', all_params)
+        app.logger.debug('files : %s', files)
+        # check if theres the JSON argument 'params'
+        params = all_params.pop('params', None)
+        if params:
+            all_params = MultiDict(json.loads(params)) # change to multidict
 
         alg = all_params.pop('alg', None).replace("_", " ")
         data_ids = all_params.poplist('data')
@@ -62,13 +71,19 @@ def model_test(model_id):
     # returns the new result_id
     if request.mimetype == 'multipart/form-data':
         files = request.files
-        params = request.form.to_dict()
+        all_params = request.form.copy()
 
-        data_id = params.pop('data', None)
-        data_file = files.get('data')
+        app.logger.debug('all_params : %s', all_params)
+        # check if theres the JSON argument 'params'
+        params = all_params.pop('params', None)
+        if params:
+            all_params = MultiDict(json.loads(params)) # change to multidict
+
+        data_ids = all_params.poplist('data', None)
+        data_files = files.getlist('data')
         
         #create the model
-        response = dm.model_test(model_id, data_file, data_id, params)
+        response = dm.model_test(model_id, data_files, data_ids, all_params)
         
         return jsonify(response)
     else:
@@ -99,7 +114,7 @@ def upload_data():
         if "data" not in request.files:
             return jsonify({"error": True, "errmsg": "No data file uploaded.'"})
 
-        data_file = request.files["data"]
+        data_file = request.files.get("data")
         filename = secure_filename(data_file.filename)
         response = dm.upload_data(data_file, filename)
 

@@ -1,6 +1,7 @@
 import requests
 import time
 import datetime
+import json
 
 output_filename = 'model_output_file.pickle'
 
@@ -12,11 +13,15 @@ data = {
     'target' : 'Anom'
 }
 files = {'data': open('testdata.csv', 'rb')}
+#files = {'data': [open('testdata.csv', 'rb'), open('testdata2.csv', 'rb')]}
 
 
 # send the POST request to create the model
 url = 'http://127.0.0.1:5000/api/model'
+# non-JSON formatted : 
 r = requests.post(url, data=data, files=files)
+# JSON formatted :
+#r = requests.post(url, data={'params': json.dumps(data)}, files=files)
 
 response = r.json()
 if response['error'] == False:

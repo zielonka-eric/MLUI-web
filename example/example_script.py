@@ -5,23 +5,18 @@ import json
 
 output_filename = 'model_output_file.pickle'
 
-data = {
+arguments = {
     #'alg' : 'support_vector_classifier',
     'alg' : 'perceptron',
     'train' : ['Route', 'Heading', 'TimeInFlight', 'Speed',
                'Altitude', 'Lat', 'Long'],
-    'target' : 'Anom'
+    'target' : 'Anom',
+    'data' : 'example/testdata.csv' # should use absolute path for consistency
 }
-files = {'data': open('testdata.csv', 'rb')}
-#files = {'data': [open('testdata.csv', 'rb'), open('testdata2.csv', 'rb')]}
-
 
 # send the POST request to create the model
 url = 'http://127.0.0.1:5000/api/model'
-# non-JSON formatted : 
-r = requests.post(url, data=data, files=files)
-# JSON formatted :
-#r = requests.post(url, data={'params': json.dumps(data)}, files=files)
+r = requests.post(url, json=arguments)
 
 response = r.json()
 if response['error'] == False:
@@ -32,7 +27,6 @@ else:
     exit()
 
 done = False
-
 while not done:
     # send the GET request to get the status of the model
     url = 'http://127.0.0.1:5000/api/model/' + model_id

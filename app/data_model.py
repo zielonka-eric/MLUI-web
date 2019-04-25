@@ -16,7 +16,7 @@ class data_model:
         # get dict of algorithms from amlet
         return AlgorithmsEnum.Algorithm
 
-    def model_create(self, algorithm, data_files, data_ids, params):
+    def model_create(self, algorithm, data_files, params):
         # set up return value
         response = dict(error=False, errmsg="")
 
@@ -32,31 +32,21 @@ class data_model:
             if c_res[0] == 0:
                 break
 
-        # get data from the database, append to list
-        data_list = data_files
-        if data_ids: # if data_ids is not empty
-            for data_id in data_ids:
-                d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
-                                 [data_id], one=True)
-                if d_res:
-                    data_list.append(io.BytesIO(d_res[0]))
-
-        if not data_list: # if data_list is empty
-            response['error'] = True
-            response['errmsg'] = "No data provided or invalid data_id"
-            return response
+        # form a list of the data csv files
+        data_list = [ data_files ]
 
         # create the params dict for amlet's createModel()
         params_dict = {
             "DataParams" : {
                 "Scheme" : "Row Based Examples CSV",
                 "Scheme Specific" : {
-                    "Training Cols" : params.poplist('train'),
-                    "Target Col" : params.poplist('target')
+                    "Training Cols" : params.pop('train'),
+                    "Target Col" : [ params.pop('target') ]  # change with amlet update
                 }
             },
-            "AlgParams" : params.to_dict()
+            "AlgParams" : params
         }
+
         app.logger.info('creating model %s', model_id)
         app.logger.debug('algorithm : %s', algorithm)
         app.logger.debug('params_dict : %s', params_dict)
@@ -135,7 +125,7 @@ class data_model:
         # return the model bytestream from the database
         return model, response
 
-    def model_test(self, model_id, data_files, data_ids, params):
+    def model_test(self, model_id, data_files, tests):
         # set up return value
         response = dict(error=False, errmsg="")
 
@@ -161,28 +151,21 @@ class data_model:
             response['errmsg'] = "No model provided or invalid model_id"
             return response
 
-        # get data from the database, append to list
-        data_list = data_files
-        if data_ids: # if data_ids is not empty
-            for data_id in data_ids:
-                d_res = query_db("SELECT data FROM Data WHERE data_id = ?;",
-                                 [data_id], one=True)
-                if d_res:
-                    data_list.append(io.BytesIO(d_res[0]))
-        if not data_list: # if data_list is empty
-            response['error'] = True
-            response['errmsg'] = "No data provided or invalid data_id"
-            return response
+        # form a list of the data csv files
+        data_list = [ data_files ]
 
-        params_dict = params
-
-        app.logger.info('testing model %s \n'
+        app.logger.info('testing model %s\n'
                         '\tresult_id %s', model_id, result_id)
-        app.logger.debug('params_dict : %s', params_dict)
+        app.logger.debug('tests : %s', tests)
         app.logger.debug('data_list : %s', data_list)
 
         # send model and data to amlet
-        self.engine.testModel(model, params, data_list, result_id)
+        success = self.engine.testModel(model, tests, data_list, result_id)
+
+        if not success:
+            response['error'] = True
+            response['errmsg'] = "There was an error creating the model."
+            return response
 
         # insert row into database for the new testing result
         query_db("INSERT INTO Results (result_id, model_id, is_finished) "
@@ -260,75 +243,6 @@ class data_model:
         response['results'] = ( json.loads(r_res[0])
                                   if r_res[0] else 'no results yet' )
         return response
-
-    def upload_data(self, data_file, filename):
-        # set up return value
-        response = dict(error=False, errmsg="")
-
-        while True:
-            # create new random data_id
-            data_id = ''.join(
-                random.choices(string.ascii_letters + string.digits, k=10))
-
-            # check for id collision in database
-            c_res = query_db("SELECT COUNT() FROM Data WHERE data_id = ?;",
-                             [data_id], one=True)
-
-            if c_res[0] == 0:
-                break
-
-        # TODO: break file into chunks < 1GB in size and put into different
-        #       rows with a sequence counter
-
-        # put data into database data table
-        query_db("INSERT INTO Data (data_id, data, filename) VALUES (?, ?, ?);",
-                 [data_id, sqlite3.Binary(data_file.read()), filename])
-
-        # return data_id
-        response['data_id'] = data_id
-        return response
-
-    def data_get(self, data_id):
-        # set up return value
-        data_file = None
-        filename = None
-        response = dict(error=False, errmsg="")
-
-        # get the data file's byte data and filename from database
-        d_res = query_db("SELECT data, filename FROM Data WHERE data_id = ?;",
-                         [data_id], one=True)
-        # check if there is no data with that id
-        if d_res is None:
-            response['error'] = True
-            response['errmsg'] = "No data with that id."
-            return data_file, filename, response
-        data_file = d_res['data']
-        filename = d_res['filename']
-
-        # return data file and filename
-        return data_file, filename, response
-
-    def data_remove(self, data_id):
-        # set up return value
-        response = dict(error=False, errmsg="")
-
-        # check that the data_id exists
-        s_res = query_db("SELECT COUNT() FROM Data WHERE data_id = ?",
-                         [data_id], one=True)
-        if s_res[0] == 0:
-            response['error'] = True
-            response['errmsg'] = ( "There is no dataset with data_id of %s" %
-                (data_id) )
-            return response
-
-        # delete data with data_id from database
-        query_db("DELETE FROM Data WHERE data_id = ?;",
-                 [data_id])
-
-        # return confirmation
-        response['confirmation'] = 'Dataset %s was removed' % (data_id)
-        return response
-
 
     # methods for interfacing with AMLET
     def receiveModel(self, model, model_id, error=False):

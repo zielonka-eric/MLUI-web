@@ -11,9 +11,3 @@ CREATE TABLE Results (
     is_finished INTEGER NOT NULL,
     FOREIGN KEY (model_id) REFERENCES Models (model_id)
 );
-
-CREATE TABLE Data (
-    data_id CHAR(10) PRIMARY KEY,
-    data BLOB NOT NULL,
-    filename TEXT NOT NULL
-);

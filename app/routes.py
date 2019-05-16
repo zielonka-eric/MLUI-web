@@ -1,4 +1,5 @@
 from app import app, data_model
+from amlet.utils import parseDir
 from flask import render_template, request, send_file, jsonify
 from werkzeug.utils import secure_filename
 import io
@@ -35,9 +36,16 @@ def model_create():
                         "errmsg":
                             "No algorithm was defined (parameter 'alg')."})
 
-        datapath = all_params.pop('data', '')
-        if os.path.isfile(datapath):
-            data = open(datapath, mode='r')
+        is_img = False
+        data_path = all_params.pop('data', '')
+        img_dir_path = all_params.pop('img-dir', '')
+
+        if os.path.isfile(data_path):
+            # form a list of the data csv files
+            data = [ open(data_path, mode='r') ]
+        elif os.path.isdir(img_dir_path):
+            data = parseDir(img_dir_path)
+            is_img = True
         else:
             return jsonify({"error": True,
                         "errmsg":
@@ -45,7 +53,7 @@ def model_create():
                             "(parameter 'data')"})
 
         #create the model
-        response = dm.model_create(alg, data, all_params)
+        response = dm.model_create(alg, data, all_params, is_img)
 
         return jsonify(response)
     else:
@@ -79,9 +87,14 @@ def model_test(model_id):
         all_params = request.get_json()
         app.logger.debug('all_params : %s', all_params)
 
-        datapath = all_params.pop('data', '')
-        if os.path.isfile(datapath):
-            data = open(datapath, mode='r')
+        data_path = all_params.pop('data', '')
+        img_dir_path = all_params.pop('img-dir', '')
+
+        if os.path.isfile(data_path):
+            # form a list of the data csv files
+            data = [ open(data_path, mode='r') ]
+        elif os.path.isdir(img_dir_path):
+            data = parseDir(img_dir_path)
         else:
             return jsonify({"error": True,
                         "errmsg":

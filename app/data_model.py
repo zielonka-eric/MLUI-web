@@ -16,7 +16,7 @@ class data_model:
         # get dict of algorithms from amlet
         return AlgorithmsEnum.Algorithm
 
-    def model_create(self, algorithm, data_files, params):
+    def model_create(self, algorithm, data_files, params, is_img):
         # set up return value
         response = dict(error=False, errmsg="")
 
@@ -32,29 +32,38 @@ class data_model:
             if c_res[0] == 0:
                 break
 
-        # form a list of the data csv files
-        data_list = [ data_files ]
-
         # create the params dict for amlet's createModel()
-        params_dict = {
-            "DataParams" : {
-                "Scheme" : "Row Based Examples CSV",
-                "Scheme Specific" : {
-                    "Training Cols" : params.pop('train'),
-                    "Target Col" : [ params.pop('target') ]  # change with amlet update
-                }
-            },
-            "AlgParams" : params
-        }
+        if is_img:
+            params_dict = {
+                "DataParams" : {
+                    "Scheme": "Images",
+                    "Scheme Specific": {
+                        #"Color Space": "RGB"  # L is black and white, if you get memory errors using RGB(A) try using L (for now)
+                        #"Dimensions": (int, int) # resizes all images in a dataset to this size
+                    }
+                },
+                "AlgParams" : params
+            }
+        else:
+            params_dict = {
+                "DataParams" : {
+                    "Scheme" : "Row Based Examples CSV",
+                    "Scheme Specific" : {
+                        "Training Cols" : params.pop('train'),
+                        "Target Col" : [ params.pop('target') ]  # change with amlet update
+                    }
+                },
+                "AlgParams" : params
+            }
 
         app.logger.info('creating model %s', model_id)
         app.logger.debug('algorithm : %s', algorithm)
         app.logger.debug('params_dict : %s', params_dict)
-        app.logger.debug('data_list : %s', data_list)
+        app.logger.debug('data_files : %s', data_files)
 
         # call amlet_engine's createModel()
         success = self.engine.createModel(algorithm, params_dict,
-                                          data_list, model_id)
+                                          data_files, model_id)
 
         if not success:
             response['error'] = True
@@ -151,16 +160,13 @@ class data_model:
             response['errmsg'] = "No model provided or invalid model_id"
             return response
 
-        # form a list of the data csv files
-        data_list = [ data_files ]
-
         app.logger.info('testing model %s\n'
                         '\tresult_id %s', model_id, result_id)
         app.logger.debug('tests : %s', tests)
-        app.logger.debug('data_list : %s', data_list)
+        app.logger.debug('data_files : %s', data_files)
 
         # send model and data to amlet
-        success = self.engine.testModel(model, tests, data_list, result_id)
+        success = self.engine.testModel(model, tests, data_files, result_id)
 
         if not success:
             response['error'] = True

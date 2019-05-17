@@ -237,17 +237,26 @@ class data_model:
         response = dict(error=False, errmsg="")
 
         # get results JSON from database
-        r_res = query_db("SELECT results FROM Results WHERE result_id = ?;",
+        r_res = query_db("SELECT results, is_finished FROM Results WHERE "
+                           "result_id = ?;",
                          [result_id], one=True)
-        # check if there is no set of results with that id
+
         if r_res is None:
             response['error'] = True
             response['errmsg'] = "No results with that id."
             return response
 
-        # return the results JSON
-        response['results'] = ( json.loads(r_res[0])
-                                  if r_res[0] else 'no results yet' )
+        status = r_res['is_finished']
+        # if status is not finished
+        if status == 0:
+            response['status'] = "not done"
+        elif status == 1:
+            # return the results JSON
+            response['results'] = json.loads(r_res['results'])
+            response['status'] = "done"
+        elif status == 2:
+            response['status'] = "error during testing"
+
         return response
 
     # methods for interfacing with AMLET

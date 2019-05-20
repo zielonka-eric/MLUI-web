@@ -1,7 +1,3 @@
-
-API Endpoints
--------------------------------------------------------------------------------
-
 GET     /api/help
     return list of algorithms, their types and parameters
 
@@ -49,39 +45,3 @@ POST    /api/model/<model_id>/remove
 
 GET     /api/results/<result_id>
     returns one set of testing results defined by <result_id>
-
-
-
-Example layout for each algorithm in this list:
--------------------------------------------------------------------------------
-
-Algorithm Name ( parameter )
-    Algorithm type (Classification, Regression, or Clustering)
-    Parameters:
-        parameter1-name=default-value (type (int, float, bool, or options))
-        parameter2-name=default-value (type (int, float, bool, or options))
-
-----Notes:
-- parameters not specified in your POST request will use their default values
-- use the header "Content-Type: application/json"
-- the response of the request to create a model contains an id used to download
-    the model
-
-
-
-Algorithms:
--------------------------------------------------------------------------------
-
-{% for alg in algorithms %}
-{{ alg.value.AlgName }} ( alg={{ alg.value.AlgName | replace(' ', '_') | lower }} )
-    {{ alg.value.Type }}
-    Parameters:
-    {%- for param in alg.value['Simple Parameters'] %}
-        {{ param.ParamName | replace(' ', '_') | lower }}={{ param.Default }} ( {{ param.Type }} )
-    {%- endfor %}
-    {%- if adv %}
-    {%- for param in alg.value['Advanced Parameters'] %}
-        {{ param.ParamName | replace(' ', '_') | lower }}={{ param.Default }} ( {{ param.Type }} )
-    {%- endfor %}
-    {%- endif %}
-{% endfor %}

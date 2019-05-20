@@ -1,3 +1,6 @@
+# run with `python -u` for unbuffered output, to print the
+# status messages immediately
+
 import requests
 import time
 import datetime

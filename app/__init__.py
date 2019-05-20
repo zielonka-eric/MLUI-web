@@ -31,4 +31,3 @@ app.logger.setLevel(logging.INFO)
 #app.logger.setLevel(logging.DEBUG)
 
 from app import routes
-#from app.api import endpoints

@@ -1,10 +1,8 @@
 from flask import Flask, g
-from config import Config
 import sqlite3
 import logging
 
 app = Flask(__name__)
-app.config.from_object(Config)
 
 #set up database connection
 # ( from http://flask.pocoo.org/docs/1.0/patterns/sqlite3/ )

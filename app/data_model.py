@@ -94,8 +94,8 @@ class data_model:
 
         # if status is not finished, check amlet
         if status == 0:
-            #response['status'] = self.engine.getStatus(model_id)
-            response['status'] = "not done"
+            response['status'] = self.engine.getStatus(model_id)
+            #response['status'] = "not done"
         elif status == 1:
             response['status'] = "done"
         elif status == 2:
@@ -278,9 +278,11 @@ class data_model:
                     "WHERE model_id = ?;",
                     [sqlite3.Binary(p_model), model_id])
 
-    def modelTested(self, result, result_id, error=False):
+    def receiveTest(self, result, result_id, error=False):
         with app.app_context():
+            result = json.dumps(result)
             app.logger.info("Test results %s received", result_id)
+            app.logger.debug("Test results %s are: %s", result_id, result)
 
             # check if error
             if error:

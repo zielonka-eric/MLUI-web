@@ -10,14 +10,11 @@ import json
 
 ##### change these variables
 
-output_filename = 'model_output_file.pickle'
+model_id = 'abcde12345'             # replace with actual model id
+output_filename = 'results.json'
 
 arguments = {
-    'alg' : 'support_vector_classifier',
-    'kernel' : 'sigmoid',
-    'train' : ['Route', 'Heading', 'TimeInFlight', 'Speed',
-               'Altitude', 'Lat', 'Long'],
-    'target' : 'Anom',
+    'tests' : ['f1', 'accuracy'],
     'data' : 'example/testdata.csv' # should use absolute path for consistency
 }
 
@@ -27,22 +24,22 @@ time_interval = 60 * 5 # wait for 5 minutes before checking status again
 
 
 
-# send the POST request to create the model
-url = 'http://127.0.0.1:5000/api/model'
+# send the POST request to test the model
+url = 'http://127.0.0.1:5000/api/model/{}/test'.format(model_id)
 r = requests.post(url, json=arguments)
 
 response = r.json()
 if response['error'] == False:
-    model_id = response['model_id']
-    print('model_id : {}'.format(model_id))
+    result_id = response['result_id']
+    print('result_id : {}'.format(result_id))
 else:
     print(response['errmsg'])
     exit()
 
 done = False
 while not done:
-    # send the GET request to get the status of the model
-    url = 'http://127.0.0.1:5000/api/model/{}'.format(model_id)
+    # send the GET request to get the status and results
+    url = 'http://127.0.0.1:5000/api/results/{}'.format(result_id)
     r = requests.get(url)
     
     response = r.json()
@@ -56,15 +53,13 @@ while not done:
         time.sleep(time_interval)
     else:
         done = True
+        results = json.dumps(response['results'])
+        print('Test results for model {} :'.format(model_id))
+        print(results)
 
-# send the POST request to download the model
-url = 'http://127.0.0.1:5000/api/model/{}/download'.format(model_id)
-r = requests.get(url)
+# write the results to an output file
+with open(output_filename, 'w') as f:
+        f.write(results)
 
-# write the model to an output file
-with open(output_filename, 'wb') as f:
-    for chunk in r.iter_content(chunk_size=128):
-        f.write(chunk)
-
-print('[  {}  ] model downloaded and saved in {}'.format(
+print('[  {}  ] results downloaded and saved in {}'.format(
         datetime.datetime.now(), output_filename))
